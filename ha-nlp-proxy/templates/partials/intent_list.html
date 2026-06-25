@@ -1,9 +1,8 @@
-{% if not selected_intent %}
-<p>Wybierz lub dodaj intencję, aby zobaczyć próbki.</p>
-{% else %}
+{% if samples %}
 <table class="data-table">
     <thead>
         <tr>
+            <th>Intencja</th>
             <th>Zdanie</th>
             <th>Akcja</th>
         </tr>
@@ -11,6 +10,7 @@
     <tbody>
         {% for sample in samples %}
         <tr>
+            <td><strong>{{ sample.intent }}</strong></td>
             <td>{{ sample.sentence }}</td>
             <td>
                 <button class="btn danger small" 
@@ -20,11 +20,9 @@
                 </button>
             </td>
         </tr>
-        {% else %}
-        <tr>
-            <td colspan="2">Brak próbek dla tej intencji.</td>
-        </tr>
         {% endfor %}
     </tbody>
 </table>
+{% else %}
+<p>Brak próbek w bazie. Dodaj nową intencję powyżej.</p>
 {% endif %}

@@ -9,13 +9,17 @@
 </head>
 <body>
     <div class="sidebar">
-        <h2>HA NLP Proxy</h2>
-        <ul>
-            <li><a href="/admin/">Dashboard</a></li>
-            <li><a href="/admin/config">Konfiguracja</a></li>
-            <li><a href="/admin/training/intents">Trening Intencji</a></li>
-            <li><a href="/admin/training/entities">Trening Encji</a></li>
-        </ul>
+        <h2>HA NLP</h2>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="/admin/">Dashboard</a></li>
+                <li><a href="/admin/training/entities">Encje & Obszary</a></li>
+                <li><a href="/admin/training/intents">Trening Intencji</a></li>
+                <li><a href="/admin/training/rules">Zasady Odmiany</a></li>
+                <li><a href="/admin/training/tester">Tester NLP</a></li>
+                <li><a href="/admin/config">Konfiguracja</a></li>
+            </ul>
+        </nav>
     </div>
     <div class="content">
         {% block content %}{% endblock %}

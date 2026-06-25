@@ -5,10 +5,22 @@
 <h1>Trening Encji (Urządzeń)</h1>
 
 <div class="action-bar mb-4">
-    <form hx-post="/admin/training/entities/sync" hx-target="body">
-        <button type="submit" class="btn primary">🔄 Pobierz z Home Assistant</button>
+    <form hx-post="/admin/training/entities/sync" hx-target="body" style="display:inline-block; margin-right:10px;">
+        <button type="submit" class="btn primary" hx-indicator="#sync-spinner">
+            🔄 Pobierz z Home Assistant
+            <span id="sync-spinner" class="spinner htmx-indicator"></span>
+        </button>
     </form>
-    <button hx-post="/admin/training/run" hx-target="#training-log" class="btn warning">🔁 Przetrenuj modele</button>
+    <form hx-post="/admin/training/entities/clear" hx-target="body" style="display:inline-block; margin-right:10px;" onsubmit="return confirm('Na pewno wyczyścić całą bazę encji?');">
+        <button type="submit" class="btn danger" style="background-color: #dc3545; color: white;" hx-indicator="#clear-spinner">
+            🗑 Wyczyść
+            <span id="clear-spinner" class="spinner htmx-indicator"></span>
+        </button>
+    </form>
+    <button hx-post="/admin/training/run" hx-target="#training-log" class="btn warning" hx-indicator="#train-spinner">
+        🔁 Przetrenuj modele
+        <span id="train-spinner" class="spinner htmx-indicator"></span>
+    </button>
 </div>
 
 {% if message %}
@@ -20,7 +32,9 @@
         <tr>
             <th>ID Encji</th>
             <th>Nazwa (do treningu)</th>
+            <th>Aliasy</th>
             <th>Domena</th>
+            <th>Obszar</th>
             <th>Aktywna?</th>
         </tr>
     </thead>
@@ -29,12 +43,20 @@
         <tr>
             <td>{{ entity.entity_id }}</td>
             <td>{{ entity.friendly_name }}</td>
+            <td><small>{{ entity.aliases }}</small></td>
             <td>{{ entity.domain }}</td>
+            <td>
+                {% if entity.area_id %}
+                    <span style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.85em;">{{ areas_map.get(entity.area_id, entity.area_id) }}</span>
+                {% else %}
+                    <span style="color: #a0aec0; font-size: 0.85em;">-</span>
+                {% endif %}
+            </td>
             <td>{% if entity.enabled %}✅{% else %}❌{% endif %}</td>
         </tr>
         {% else %}
         <tr>
-            <td colspan="4">Brak encji. Pobierz z Home Assistant.</td>
+            <td colspan="5">Brak encji. Pobierz z Home Assistant.</td>
         </tr>
         {% endfor %}
     </tbody>

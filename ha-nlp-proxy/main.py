@@ -42,8 +42,20 @@ async def chat_completions(request: Request):
 
     log_inference(prompt, intent, entity_id, i_score, e_score, routed)
 
+    from nlp import classify, build_ha_arguments
+
     if routed:
         return await _fallback(data)
+
+    arguments_list = build_ha_arguments(entity_id, prompt)
+
+    tool_calls = []
+    for arg_json in arguments_list:
+        tool_calls.append({
+            "id": f"call_{uuid.uuid4().hex[:24]}",
+            "type": "function",
+            "function": {"name": intent, "arguments": arg_json}
+        })
 
     return {
         "id":      f"chatcmpl-{uuid.uuid4()}",
@@ -54,11 +66,7 @@ async def chat_completions(request: Request):
             "index": 0,
             "message": {
                 "role": "assistant", "content": None,
-                "tool_calls": [{
-                    "id": f"call_{uuid.uuid4().hex[:24]}",
-                    "type": "function",
-                    "function": {"name": intent, "arguments": f'{{"name": "{entity_id}"}}'}
-                }]
+                "tool_calls": tool_calls
             },
             "finish_reason": "tool_calls"
         }],
@@ -67,6 +75,9 @@ async def chat_completions(request: Request):
 
 async def _fallback(original_body: dict):
     url = get_config("fallback_url", "")
+    if url.endswith("/v1") or url.endswith("/v1/"):
+        url = url.rstrip("/") + "/chat/completions"
+        
     key = get_config("fallback_api_key", "")
     if not url:
         return JSONResponse({"choices": [{"message": {
@@ -75,8 +86,10 @@ async def _fallback(original_body: dict):
         }, "finish_reason": "stop"}]})
         
     async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.post(url, json=original_body,
-                              headers={"Authorization": f"Bearer {key}"})
+        headers = {}
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
+        r = await client.post(url, json=original_body, headers=headers)
         return JSONResponse(r.json(), status_code=r.status_code)
 
 @app.get("/health")
@@ -89,3 +102,7 @@ async def global_exc(request, exc):
     return JSONResponse(status_code=500, content={
         "error": {"message": str(exc), "type": "proxy_error", "code": None}
     })
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

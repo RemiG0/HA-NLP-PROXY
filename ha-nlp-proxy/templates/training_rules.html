@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Zasady Odmiany - HA NLP{% endblock %}
+
+{% block content %}
+<div class="header-container">
+    <h1>Zasady Odmiany (Locative Variants)</h1>
+</div>
+
+<p>Zasady te służą do automatycznego generowania poprawnych form gramatycznych nazw pokoi podczas uczenia AI. Podajesz tu końcówkę wyrazu bazowego i końcówkę po odmianie. Na przykład: <code>nia -> ni</code> sprawia, że "Sypialnia" staje się "Sypialni".</p>
+
+{% if message %}
+<div class="alert success">{{ message }}</div>
+{% endif %}
+
+<div class="card">
+    <h3>Dodaj Nową Regułę</h3>
+    <form action="/admin/training/rules/add" method="post" style="display: flex; gap: 10px; align-items: center; margin-top: 15px;">
+        <input type="text" name="suffix_in" placeholder="np. nia" required style="width: 150px;">
+        <span> ➔ </span>
+        <input type="text" name="suffix_out" placeholder="np. ni" required style="width: 150px;">
+        <button type="submit" class="btn btn-primary">Zapisz Regułę</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Lista Reguł</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Zakończenie bazowe</th>
+                <th>Zakończenie po odmianie</th>
+                <th>Przykład</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rule in rules %}
+            <tr>
+                <td>{{ rule.id }}</td>
+                <td><code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">{{ rule.suffix_in }}</code></td>
+                <td><code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">{{ rule.suffix_out }}</code></td>
+                <td style="color: #a0aec0;">...{{ rule.suffix_in }} ➔ ...{{ rule.suffix_out }}</td>
+                <td>
+                    <form action="/admin/training/rules/delete/{{ rule.id }}" method="post" style="margin: 0; display: inline;">
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Czy na pewno chcesz usunąć tę regułę?');">Usuń</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: #a0aec0;">Brak zdefiniowanych reguł.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

@@ -19,6 +19,18 @@
             <label>HA Long-Lived Access Token</label>
             <input type="password" name="ha_token" value="{{ config.get('ha_token', '') }}">
         </div>
+        <div class="form-group">
+            <label>Synchronizowane Domeny (po przecinku)</label>
+            <input type="text" name="included_domains" value="{{ config.get('included_domains', 'light, switch, cover, climate, media_player, fan, vacuum') }}">
+            <small>Domeny uwzględniane podczas pobierania encji. Oddziel przecinkami.</small>
+        </div>
+        <div style="margin-top: 15px;">
+            <button type="button" class="btn warning" hx-post="/admin/config/test_ha" hx-include="closest form" hx-target="#ha-test-result" hx-indicator="#ha-test-spinner">
+                Sprawdź połączenie z HA
+                <span id="ha-test-spinner" class="spinner htmx-indicator"></span>
+            </button>
+            <div id="ha-test-result" style="margin-top: 10px;"></div>
+        </div>
     </fieldset>
 
     <fieldset>
@@ -47,9 +59,22 @@
             <label>Klucz API</label>
             <input type="password" name="fallback_api_key" value="{{ config.get('fallback_api_key', '') }}">
         </div>
-        <div class="form-group">
+        <div class="form-group" id="fallback-model-group">
             <label>Model Name</label>
-            <input type="text" name="fallback_model" value="{{ config.get('fallback_model', 'gpt-4o-mini') }}">
+            <input type="text" name="fallback_model" list="fallback-models-list" value="{{ config.get('fallback_model', 'gpt-4o-mini') }}">
+            <datalist id="fallback-models-list"></datalist>
+        </div>
+        <div class="form-group">
+            <label>Niestandardowy System Prompt (dla Testera)</label>
+            <textarea name="tester_system_prompt" rows="8" placeholder="Wpisz własny system prompt...">{{ config.get('tester_system_prompt', '') }}</textarea>
+            <small>Użyj tagu <code>&#123;&#123;entities&#125;&#125;</code> w miejscu, w którym chcesz automatycznie wstrzyknąć listę urządzeń (w formacie zgodnym z Home Assistant). Zostaw puste, aby użyć domyślnego.</small>
+        </div>
+        <div style="margin-top: 15px;">
+            <button type="button" class="btn warning" hx-post="/admin/config/test_fallback" hx-include="closest form" hx-target="#fallback-test-result" hx-indicator="#fallback-test-spinner">
+                Sprawdź połączenie
+                <span id="fallback-test-spinner" class="spinner htmx-indicator"></span>
+            </button>
+            <div id="fallback-test-result" style="margin-top: 10px;"></div>
         </div>
     </fieldset>
 

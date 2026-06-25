@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Tester NLP - HA NLP Proxy{% endblock %}
+
+{% block content %}
+<h1>Interaktywny Tester Zdań (NLP)</h1>
+<p>Wpisz dowolne polecenie w języku polskim, aby zobaczyć w czasie rzeczywistym, jak silnik SI (HerBERT) klasyfikuje Twoje słowa, lub wybierz jedno z przykładowych zdań.</p>
+
+<div class="action-bar mb-4" style="background-color: var(--card-bg); padding: 20px; border-radius: 8px;">
+    <form hx-post="/admin/training/tester/run" hx-target="#tester-results" hx-indicator="#test-spinner">
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <input type="text" id="test-input" name="prompt" placeholder="Np. włącz szybko moją ulubioną lampę w salonie" style="flex: 1; font-size: 1.1em; padding: 10px;" required autocomplete="off">
+            <button type="submit" class="btn primary" style="padding: 10px 20px; font-size: 1.1em;">
+                Przetestuj
+                <span id="test-spinner" class="spinner htmx-indicator"></span>
+            </button>
+        </div>
+    </form>
+    
+    <div class="mt-4">
+        <p style="margin-bottom: 8px; color: #aaa; font-size: 0.9em;">Przykładowe zdania (kliknij):</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% set examples = [
+                "włącz główne światło w salonie",
+                "wyłącz telewizor w sypialni",
+                "zgaś wszystko w kuchni",
+                "otwórz rolety w biurze",
+                "opuść bramę garażową",
+                "ustaw głośność na maxa w salonie",
+                "przełącz ekspres do kawy",
+                "odpal odkurzacz",
+                "jaka jest dzisiaj pogoda w warszawie?"
+            ] %}
+            {% for ex in examples %}
+            <span class="example-pill" onclick="document.getElementById('test-input').value='{{ ex }}'; document.getElementById('test-input').form.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}));" style="background-color: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 15px; font-size: 0.85em; cursor: pointer; transition: background-color 0.2s;">{{ ex }}</span>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div id="tester-results">
+    <!-- Wyniki pojawią się tutaj -->
+</div>
+
+<style>
+.example-pill:hover {
+    background-color: var(--primary-color) !important;
+    color: white;
+}
+.result-card {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background-color: #333;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+.progress-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+.progress-fill.high { background-color: var(--success-color); }
+.progress-fill.med { background-color: var(--warning-color); }
+.progress-fill.low { background-color: var(--danger-color); }
+</style>
+{% endblock %}

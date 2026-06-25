@@ -8,3 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
+.env
+.pyenv
+
+# Data and Models
+*.db
+models/
+*.json
