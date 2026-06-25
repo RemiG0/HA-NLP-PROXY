@@ -59,24 +59,49 @@ def create_db():
             s.commit()
     except Exception:
         pass
-        
-    # Seed default inflection rules if empty
-    with Session(engine) as s:
-        if s.exec(select(InflectionRule)).first() is None:
-            default_rules = [
-                ("nia", "ni"),
-                ("ka", "ce"),
-                ("on", "onie"),
-                ("aż", "ażu"),
-                ("ód", "odzie"),
-                ("ro", "rze"),
-                ("ój", "oju"),
-                ("rz", "rzu")
-            ]
-            for sin, sout in default_rules:
-                s.add(InflectionRule(suffix_in=sin, suffix_out=sout))
+    try:
+        with Session(engine) as s:
+            s.exec(text("ALTER TABLE entity ADD COLUMN original_name VARCHAR"))
+            s.exec(text("ALTER TABLE entity ADD COLUMN original_aliases VARCHAR"))
             s.commit()
-
+    except Exception:
+        pass
+        
+    with Session(engine) as session:
+        import yaml
+        import os
+        
+        seed_file = "seed.yaml"
+        if os.path.exists(seed_file):
+            try:
+                with open(seed_file, "r", encoding="utf-8") as f:
+                    seed_data = yaml.safe_load(f)
+            except Exception as e:
+                print(f"Error loading {seed_file}: {e}")
+                seed_data = {}
+        else:
+            seed_data = {}
+            
+        # Seed Intents
+        if not session.exec(select(IntentSample)).first() and "intents" in seed_data:
+            for intent, phrases in seed_data["intents"].items():
+                for phrase in phrases:
+                    session.add(IntentSample(sentence=phrase, intent=intent))
+            session.commit()
+            
+        # Seed Inflection Rules
+        if not session.exec(select(InflectionRule)).first() and "inflection_rules" in seed_data:
+            for rule in seed_data["inflection_rules"]:
+                session.add(InflectionRule(suffix_in=rule["in"], suffix_out=rule["out"]))
+            session.commit()
+            
+        # Seed System Prompt
+        if "system_prompt" in seed_data:
+            existing_prompt = session.exec(select(Config).where(Config.key == "tester_system_prompt")).first()
+            if not existing_prompt:
+                session.add(Config(key="tester_system_prompt", value=seed_data["system_prompt"]))
+                session.commit()
+        
 def get_config(key: str, default: str = "") -> str:
     with Session(engine) as session:
         statement = select(Config).where(Config.key == key)

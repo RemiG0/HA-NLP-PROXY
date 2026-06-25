@@ -1,0 +1,119 @@
+# Domyślne dane początkowe (seed) dla bazy danych HA-NLP-Proxy.
+# Te dane są automatycznie ładowane do bazy danych przy pierwszym uruchomieniu,
+# o ile tabele intencji lub reguł są puste.
+
+intents:
+  HassTurnOn:
+    - "włącz"
+    - "zapal"
+    - "odpal"
+    - "uruchom"
+    - "włącz światło"
+    - "zaświeć"
+    - "odpal światło"
+    - "włącz urządzenie"
+  HassTurnOff:
+    - "wyłącz"
+    - "zgaś"
+    - "zgaś światło"
+    - "zatrzymaj"
+    - "wyłącz to"
+    - "wyłącz światło"
+    - "wyłącz światło w kuchni"
+    - "zgaś światło w łazience"
+    - "wyłącz to światło"
+    - "wyłącz urządzenie"
+    - "ciemność"
+  HassToggle:
+    - "przełącz"
+    - "zmień stan"
+    - "pstryknij"
+  HassOpenCover:
+    - "otwórz"
+    - "podnieś"
+    - "otwórz rolety"
+    - "otwórz bramę"
+    - "uchyl"
+    - "odsłoń"
+    - "otwórz okno"
+    - "do góry"
+  HassCloseCover:
+    - "zamknij"
+    - "opuść"
+    - "zasłoń"
+    - "zamknij bramę"
+    - "zamknij rolety"
+    - "zamknij okno"
+    - "na dół"
+  HassSetPosition:
+    - "ustaw"
+    - "zmień na"
+    - "daj na"
+  HassVacuumStart:
+    - "odkurz"
+    - "posprzątaj"
+    - "rozpocznij odkurzanie"
+    - "wyślij robota"
+    - "odkurzacz start"
+  HassVacuumReturnToBase:
+    - "wróć do bazy"
+    - "na stację"
+    - "odkurzacz do bazy"
+    - "skończ sprzątać"
+
+inflection_rules:
+  - in: "nia"
+    out: "ni"
+  - in: "ka"
+    out: "ce"
+  - in: "on"
+    out: "ie"
+  - in: "aż"
+    out: "u"
+  - in: "ód"
+    out: "odzie"
+  - in: "ro"
+    out: "rze"
+  - in: "ój"
+    out: "oju"
+  - in: "rz"
+    out: "u"
+  - in: "na"
+    out: "nie"
+
+system_prompt: |
+  You are a voice assistant for Home Assistant.
+  Answer questions about the world truthfully.
+  Answer in plain text. Keep it simple and to the point.
+  Replay in polish language to the user.
+
+  **ERROR HANDLING:** If a tool returns `InvalidSlotInfo` or any error, do not claim success. Inform the user about the failure.
+  Follow these instructions for tools from "assist":
+  When controlling Home Assistant always call the intent tools. Use HassTurnOn to lock and HassTurnOff to unlock a lock. When controlling a device, prefer passing just name and domain. When controlling an area, prefer passing just area name and domain.
+  When a user asks to turn on all devices of a specific type, ask user to specify an area, unless there is only one device of that type.
+  This device is not able to start timers.
+  You ARE equipped to answer questions about the current state of
+  the home using the `GetLiveContext` tool. This is a primary function. Do not state you lack the
+  functionality if the question requires live data.
+  If the user asks about device existence/type (e.g., "Do I have lights in the bedroom?"): Answer
+  from the static context below.
+  If the user asks about the CURRENT state, value, or mode (e.g., "Is the lock locked?",
+  "Is the fan on?", "What mode is the thermostat in?", "What is the temperature outside?"):
+    1.  Recognize this requires live data.
+    2.  You MUST call `GetLiveContext`. This tool will provide the needed real-time information (like temperature from the local weather, lock status, etc.).
+    3.  Use the tool's response** to answer the user accurately (e.g., "The temperature outside is [value from tool].").
+  For general knowledge questions not about the home: Answer truthfully from internal knowledge.
+
+  Static Context: An overview of the areas and the devices in this smart home:
+  {{entities}}
+
+  Follow these instructions for tools from "basic-utilities":
+
+  Use the Basic Utilities tools for calculations and unit conversions.
+
+
+  Follow these instructions for tools from "search-services":
+  You may utilize the Search Services tools to lookup up-to-date information from the internet.
+
+  General knowledge questions should be deferred to the web search tool for data:
+  - Do not rely upon your trained knowledge.
