@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Trening Encji - HA NLP Proxy{% endblock %}
+
+{% block content %}
+<h1>Trening Encji (Urządzeń)</h1>
+
+<div class="action-bar mb-4">
+    <form hx-post="/admin/training/entities/sync" hx-target="body">
+        <button type="submit" class="btn primary">🔄 Pobierz z Home Assistant</button>
+    </form>
+    <button hx-post="/admin/training/run" hx-target="#training-log" class="btn warning">🔁 Przetrenuj modele</button>
+</div>
+
+{% if message %}
+<div class="alert info">{{ message }}</div>
+{% endif %}
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>ID Encji</th>
+            <th>Nazwa (do treningu)</th>
+            <th>Domena</th>
+            <th>Aktywna?</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entity in entities %}
+        <tr>
+            <td>{{ entity.entity_id }}</td>
+            <td>{{ entity.friendly_name }}</td>
+            <td>{{ entity.domain }}</td>
+            <td>{% if entity.enabled %}✅{% else %}❌{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">Brak encji. Pobierz z Home Assistant.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mt-4">
+    <h3>Log trenowania</h3>
+    <pre id="training-log" class="log-container">Wciśnij "Przetrenuj modele" aby rozpocząć.</pre>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - HA NLP Proxy{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Status Modeli</h3>
+        <p class="{% if trained %}status-ok{% else %}status-error{% endif %}">
+            {% if trained %}Zaladowane (OK){% else %}Brak wytrenowanych modeli{% endif %}
+        </p>
+    </div>
+    <div class="stat-card">
+        <h3>Fallback LLM</h3>
+        <p class="{% if fallback_configured %}status-ok{% else %}status-warning{% endif %}">
+            {% if fallback_configured %}Skonfigurowany{% else %}Nieskonfigurowany{% endif %}
+        </p>
+    </div>
+    <div class="stat-card">
+        <h3>Próbki Intencji</h3>
+        <p>{{ intent_count }}</p>
+    </div>
+    <div class="stat-card">
+        <h3>Encje</h3>
+        <p>{{ entity_count }}</p>
+    </div>
+</div>
+
+<h2>Ostatnie Logi Inferencji</h2>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Czas</th>
+            <th>Prompt</th>
+            <th>Przewidywana Intencja</th>
+            <th>Encja</th>
+            <th>Wyniki (I/E)</th>
+            <th>Fallback?</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ log.prompt }}</td>
+            <td>{{ log.intent or '-' }}</td>
+            <td>{{ log.entity_id or '-' }}</td>
+            <td>{{ "%.2f"|format(log.intent_score) }} / {{ "%.2f"|format(log.entity_score) }}</td>
+            <td>{% if log.routed_to_fallback %}✅{% else %}❌{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6">Brak danych</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

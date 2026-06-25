@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Konfiguracja - HA NLP Proxy{% endblock %}
+
+{% block content %}
+<h1>Konfiguracja</h1>
+
+{% if message %}
+<div class="alert success">{{ message }}</div>
+{% endif %}
+
+<form method="POST" action="/admin/config" class="config-form">
+    <fieldset>
+        <legend>Home Assistant</legend>
+        <div class="form-group">
+            <label>HA Base URL</label>
+            <input type="text" name="ha_url" value="{{ config.get('ha_url', 'http://homeassistant.local:8123') }}">
+        </div>
+        <div class="form-group">
+            <label>HA Long-Lived Access Token</label>
+            <input type="password" name="ha_token" value="{{ config.get('ha_token', '') }}">
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Klasyfikacja</legend>
+        <div class="form-group">
+            <label>Próg pewności (Confidence threshold)</label>
+            <input type="number" step="0.01" name="confidence_threshold" value="{{ config.get('confidence_threshold', '0.6') }}">
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Fallback LLM</legend>
+        <div class="form-group">
+            <label>Typ Fallbacku</label>
+            <select name="fallback_type">
+                <option value="none" {% if config.get('fallback_type') == 'none' %}selected{% endif %}>Brak</option>
+                <option value="local" {% if config.get('fallback_type') == 'local' %}selected{% endif %}>Lokalny (Ollama, LM Studio)</option>
+                <option value="cloud" {% if config.get('fallback_type') == 'cloud' %}selected{% endif %}>Chmura (OpenAI, itd.)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>URL Endpointu (Chat Completions)</label>
+            <input type="text" name="fallback_url" value="{{ config.get('fallback_url', '') }}" placeholder="http://localhost:11434/v1/chat/completions">
+        </div>
+        <div class="form-group">
+            <label>Klucz API</label>
+            <input type="password" name="fallback_api_key" value="{{ config.get('fallback_api_key', '') }}">
+        </div>
+        <div class="form-group">
+            <label>Model Name</label>
+            <input type="text" name="fallback_model" value="{{ config.get('fallback_model', 'gpt-4o-mini') }}">
+        </div>
+    </fieldset>
+
+    <button type="submit" class="btn primary">Zapisz konfigurację</button>
+</form>
+{% endblock %}

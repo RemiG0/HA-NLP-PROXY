@@ -1,0 +1,30 @@
+{% if not selected_intent %}
+<p>Wybierz lub dodaj intencję, aby zobaczyć próbki.</p>
+{% else %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Zdanie</th>
+            <th>Akcja</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sample in samples %}
+        <tr>
+            <td>{{ sample.sentence }}</td>
+            <td>
+                <button class="btn danger small" 
+                        hx-delete="/admin/training/intents/{{ sample.id }}" 
+                        hx-target="#intent-list-container">
+                    🗑 Usuń
+                </button>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="2">Brak próbek dla tej intencji.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
