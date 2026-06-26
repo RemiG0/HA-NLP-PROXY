@@ -69,6 +69,8 @@ http://<host>:8000/admin/
 ├── /admin/config               Configuration  (HA connection, fallback LLM, thresholds)
 ├── /admin/training/intents     Intent Training  (browse/add/delete training sentences per intent)
 ├── /admin/training/entities    Entity Training  (sync entities from HA, manage labels, train)
+├── /admin/training/rules       Zasady Odmiany  (manage grammatical inflection rules for locative variants)
+├── /admin/training/tester      Tester NLP  (test your voice commands locally against the models)
 └── /admin/training/run         Trigger retrain  (HTMX endpoint, streams training progress)
 ```
 
@@ -488,6 +490,10 @@ async def run_training():
 
 ---
 
+### 5.6 Zasady Odmiany (`GET /admin/training/rules`)
+Provides a UI to manage dynamic grammatical inflection rules (locative variants) for the NLP engine. In languages with heavy noun declension (like Polish), users rarely say commands using the base noun (e.g., "włącz światło w sypialnia"). Instead, they inflect the noun ("włącz światło w sypialni"). 
+This page allows users to define custom `suffix_in` -> `suffix_out` rules (e.g., `nia` -> `ni`). During entity training, the engine automatically applies these rules to all matching entity and area names to create grammatically correct training phrases.
+
 ## 6. Model Persistence & Hot-Reload
 
 Trained artefacts are saved to `models/` by `train.py`. The NLP module exposes `load_models()` which can be called at any time (from startup lifespan, from the retrain endpoint) to atomically swap the in-memory classifiers without dropping any in-flight requests.
@@ -535,7 +541,19 @@ This means HA always gets a valid OpenAI-formatted response — either a local `
 
 ---
 
-## 8. Confidence Threshold & Scoring
+## 8. Smart Area Entity Resolution
+
+When the system classifies a user's prompt as targeting an entire area (e.g., "włącz światła w kuchni", where `kuchnia` resolves to `area.kuchnia_id`), the proxy performs local smart entity resolution rather than delegating area intent processing purely to Home Assistant.
+
+### 8.1 NLP Area Resolution Pipeline
+1. **Determine Device Type**: The NLP engine (`nlp.py`) extracts domain keywords (e.g., `light`, `światł`, `blind`, `rolet`) from the user's prompt.
+2. **Local Database Query**: The proxy queries the local SQLite `Entity` table for all devices physically assigned to the matched `area_id`.
+3. **Keyword Filtering**: It cross-references these area entities against the guessed device type. It includes entities whose official HA domain matches (e.g., `light`) OR whose `friendly_name` or custom `aliases` contain the user's keyword (e.g., a smart plug in the `switch` domain named "Taśma LED (światło)").
+4. **Multiple Tool Calls**: If the proxy identifies multiple matching entities within the area, it bypasses Home Assistant's built-in area resolution and instead generates a list of exact `tool_calls`—one for each specific entity (e.g., `{"name": "light.kitchen_main"}`, `{"name": "switch.kitchen_led"}`).
+
+This mechanism provides extreme flexibility, enabling users to group arbitrarily domained devices (switches, relays) logically by alias without changing their underlying HA domain configurations.
+
+## 9. Confidence Threshold & Scoring
 
 `LinearSVC` exposes `decision_function` scores (not calibrated probabilities). The threshold is configurable per the Configuration page.
 
@@ -553,7 +571,7 @@ if intent_score < threshold or entity_score < threshold:
 
 ---
 
-## 9. Error Handling & Logging
+## 10. Error Handling & Logging
 
 All unhandled exceptions are caught and returned as valid OpenAI error JSON (not HTTP 500 HTML) to prevent HA from treating the integration as broken.
 
@@ -570,7 +588,7 @@ All inferences are logged to `InferenceLog` with prompt, predicted intent/entity
 
 ---
 
-## 10. Project File Structure
+## 11. Project File Structure
 
 ```
 ha-nlp-proxy/
@@ -606,9 +624,9 @@ ha-nlp-proxy/
 
 ---
 
-## 11. Deployment
+## 12. Deployment
 
-### 11.1 Local (Developer Testing)
+### 12.1 Local (Developer Testing)
 
 ```bash
 uv sync
@@ -617,7 +635,7 @@ uv run python main.py
 # Proxy    → http://localhost:8000/v1/chat/completions
 ```
 
-### 11.2 Docker Container (Recommended for Production)
+### 12.2 Docker Container (Recommended for Production)
 
 ```dockerfile
 FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
@@ -654,20 +672,39 @@ docker run -d \
   ha-nlp-proxy
 ```
 
-### 11.3 Home Assistant Configuration
+### 12.3 Home Assistant Configuration
 
 1. Open **Settings → Devices & Services → Add Integration → OpenAI Conversation**.
 2. Set **Base URL**: `http://<proxy-host>:8000/v1`
 3. Set **API Key**: any arbitrary string (proxy ignores it).
 4. Open **Settings → Voice Assistants** and assign the integration.
 
-### 11.4 Home Assistant Add-on (Future)
+### 12.4 Home Assistant Add-on (Future)
 
 Package as a native HA add-on (`config.yaml` + `Dockerfile`) and publish to a custom add-on repository. Enables one-click install directly from the HA UI without a separate host machine.
 
+### 12.5 Narzędzia Diagnostyczne CLI (CLI Tools)
+
+W głównym katalogu projektu znajduje się plik `cli.py`, który dostarcza podręczny zestaw komend do administracji i diagnostyki bezpośrednio z poziomu konsoli:
+
+```bash
+# Wyświetlenie pomocy
+uv run python cli.py --help
+
+# Ręczne wymuszenie pobrania encji i obszarów z Home Assistant
+uv run python cli.py sync
+
+# Ręczne uruchomienie treningu modeli klasyfikacyjnych (zapisuje do models/)
+uv run python cli.py train
+
+# Błyskawiczny test zdania symulujący zapytanie od asystenta głosowego
+uv run python cli.py test "włącz światło w kuchni"
+```
+Przydatne przy debugowaniu skuteczności dopasowywania bez konieczności "wyklikiwania" operacji w interfejsie graficznym.
+
 ---
 
-## 12. Testing Strategy
+## 13. Testing Strategy
 
 | Level | Tool | What to test |
 |---|---|---|
@@ -683,7 +720,7 @@ uv run pytest tests/ -v --cov=. --cov-report=term-missing
 
 ---
 
-## 13. Non-Functional Requirements
+## 14. Non-Functional Requirements
 
 | Requirement | Target |
 |---|---|
@@ -697,7 +734,7 @@ uv run pytest tests/ -v --cov=. --cov-report=term-missing
 
 ---
 
-## 14. Open Questions / Future Roadmap
+## 15. Open Questions / Future Roadmap
 
 - [ ] **Slot extraction:** `HassLightSet` needs additional arguments (`brightness`, `color_temp`). Requires a second classification head or slot-filling layer.
 - [ ] **Multi-intent commands:** "włącz światło i odtwórz muzykę" — requires sentence segmentation before classification.
